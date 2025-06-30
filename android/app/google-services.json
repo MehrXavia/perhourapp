@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "595355358057",
+    "project_id": "perhour-cb696",
+    "storage_bucket": "perhour-cb696.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:595355358057:android:f8fc83df57fcb1294a23f8",
+        "android_client_info": {
+          "package_name": "com.perHourApp.app"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDLs1lVSbJtX4QuTBoYSs3LLfUfcnS0Oyk"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

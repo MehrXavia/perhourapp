@@ -1,0 +1,202 @@
+name: onservice24
+description: A new Flutter project.
+# The following line prevents the package from being accidentally published to
+# pub.dev using `flutter pub publish`. This is preferred for private packages.
+publish_to: 'none' # Remove this line if you wish to publish to pub.dev
+
+# The following defines the version and build number for your application.
+# A version number is three numbers separated by dots, like 1.2.43
+# followed by an optional build number separated by a +.
+# Both the version and the builder number may be overridden in flutter
+# build by specifying --build-name and --build-number, respectively.
+# In Android, build-name is used as versionName while build-number used as versionCode.
+# Read more about Android versioning at https://developer.android.com/studio/publish/versioning
+# In iOS, build-name is used as CFBundleShortVersionString while build-number is used as CFBundleVersion.
+# Read more about iOS versioning at
+# https://developer.apple.com/library/archive/documentation/General/Reference/InfoPlistKeyReference/Articles/CoreFoundationKeys.html
+# In Windows, build-name is used as the major, minor, and patch parts
+# of the product and file versions while build-number is used as the build suffix.
+version: 1.0.0+1
+
+environment:
+  sdk: '>=3.2.4 <4.0.0'
+
+# Dependencies specify other packages that your package needs in order to work.
+# To automatically upgrade your package dependencies to the latest versions
+# consider running `flutter pub upgrade --major-versions`. Alternatively,
+# dependencies can be manually updated by changing the version numbers below to
+# the latest version available on pub.dev. To see which dependencies have newer
+# versions available, run `flutter pub outdated`.
+dependencies:
+  flutter:
+    sdk: flutter
+  flutter_localizations:
+    sdk: flutter
+
+
+  cupertino_icons:
+  steps_indicator:
+
+  firebase_core:
+  image_picker:
+  image_cropper:
+  mime:
+  cached_network_image:
+  carousel_slider:
+  smooth_page_indicator:
+  flutter_rating_bar:
+  url_launcher:
+  shared_preferences:
+  sqflite:
+  path:
+  http:
+  dio:
+  provider:
+  flutter_easyloading:
+  flutter_offline:
+  fluttertoast:
+  card_swiper:
+
+  dropdown_button2:
+  flutter_svg:
+  badges:
+  favorite_button:
+  flutter_downloader:
+  path_provider:
+  dartz:
+  get_it:
+  retrofit:
+  logger:
+  # flutter_dynamic_icon:
+  timeline_tile:
+  timelines:
+  sizer:
+  auto_size_text:
+  injectable:
+  pull_to_refresh_flutter3:
+
+  flutter_bloc:
+  equatable:
+
+  animation_wrappers:
+  rxdart:
+  animated_splash_screen:
+  flutter_switch:
+  flutter_onboarding_slider:
+
+  flutter_typeahead:
+
+  device_preview:
+  google_maps_flutter:
+  location:
+  geolocator:
+  country_picker:
+  readmore:
+  google_map_marker_animation:
+  share_plus:
+  firebase_messaging:
+  map_picker:
+  geocoding:
+  loading_indicator:
+  sms_otp_auto_verify:
+    path: lib_plugins/sms_otp_auto_verify
+
+  custom_map_markers:
+  flutter_timer_countdown:
+  local_auth:
+  pulsator:
+  font_awesome_flutter:
+  package_info_plus:
+  intl:
+  flutter_local_notifications:
+
+  win32:    # Use an older version
+  # assets_audio_player: ^3.1.1
+  # pin_code_fields: ^8.0.1
+
+
+
+
+
+
+
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_native_splash: ^2.3.3
+  flutter_launcher_icons: ^0.13.1
+  change_app_package_name: ^1.1.0
+  retrofit_generator: ^8.0.0
+  build_runner: ^2.4.6
+  json_serializable: ^6.7.1
+  injectable_generator: ^2.4.0
+  analyzer: ^6.2.0
+  flutter_lints: ^2.0.3
+
+# For information on the generic Dart part of this file, see the
+# following page: https://dart.dev/tools/pub/pubspec
+
+flutter_native_splash:
+  android: true
+  ios: true
+  color: "#ffffff"
+  background_image: "assets/logo/logo.png"
+  android12: true
+  android_12:
+    background_image: "assets/logo/logo.png"
+
+
+flutter_icons:
+  android: true
+  ios: true
+  image_path: "assets/logo/icon.png"
+
+# The following section is specific to Flutter packages.
+flutter:
+  generate: true
+  uses-material-design: true
+
+  assets:
+    - assets/icons/
+    - assets/images/
+    - assets/images/loading.gif
+    - assets/images/logo.png
+    - assets/images/logo.png
+    - assets/images/terms_ar.pdf
+    - assets/images/terms_en.pdf
+#    - assets/images/success.gif
+    - assets/logo/
+    - assets/logo/logo.png
+    - assets/json/map_style.txt
+
+  fonts:
+    - family: Cairo-Black
+      fonts:
+        - asset: assets/font/Cairo/Cairo-Black.ttf
+    - family: Cairo-Bold
+      fonts:
+        - asset: assets/font/Cairo/Cairo-Bold.ttf
+    - family: Cairo-ExtraBold
+      fonts:
+        - asset: assets/font/Cairo/Cairo-ExtraBold.ttf
+    - family: Cairo-ExtraLight
+      fonts:
+        - asset: assets/font/Cairo/Cairo-ExtraLight.ttf
+    - family: Cairo-Light
+      fonts:
+        - asset: assets/font/Cairo/Cairo-Light.ttf
+    - family: Cairo-Medium
+      fonts:
+        - asset: assets/font/Cairo/Cairo-Medium.ttf
+    - family: Cairo-Regular
+      fonts:
+        - asset: assets/font/Cairo/Cairo-Regular.ttf
+    - family: Cairo-SemiBold
+      fonts:
+        - asset: assets/font/Cairo/Cairo-SemiBold.ttf
+
+
+
+
+
