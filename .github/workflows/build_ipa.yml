@@ -1,4 +1,4 @@
-name: Build IPA with Code Signing
+name: Build Signed IPA
 
 on:
   push:
@@ -8,18 +8,20 @@ on:
 jobs:
   build:
     runs-on: macos-latest
+    timeout-minutes: 30
     
     steps:
     - uses: actions/checkout@v4
     
-    # 1. Set up certificates and profiles
+    # 1. Set up code signing
     - name: Install Apple Certificate
       uses: apple-actions/import-codesign-certs@v2
       with:
         p12-file-base64: ${{ secrets.CERTIFICATE_P12 }}
         p12-password: ${{ secrets.CERTIFICATE_PASSWORD }}
-        create-keychain: true
+        keychain-name: ios-build-keychain
         keychain-password: ${{ secrets.KEYCHAIN_PASSWORD }}
+        delete-keychain: false
         
     - name: Install Provisioning Profile
       run: |
@@ -27,28 +29,50 @@ jobs:
         echo "${{ secrets.PROVISIONING_PROFILE }}" | base64 --decode > temp.mobileprovision
         UUID=$(/usr/libexec/PlistBuddy -c "Print UUID" /dev/stdin <<< $(security cms -D -i temp.mobileprovision))
         mv temp.mobileprovision ~/Library/MobileDevice/Provisioning\ Profiles/$UUID.mobileprovision
+        echo "Installed profile: $UUID"
         
     # 2. Install dependencies
-    - name: Install CocoaPods
+    - name: Cache CocoaPods
+      uses: actions/cache@v3
+      with:
+        path: Pods
+        key: pods-${{ hashFiles('Podfile.lock') }}
+        
+    - name: Install Pods
       run: pod install
-      
+        
     # 3. Build and export IPA
-    - name: Build IPA
+    - name: Build Archive
       run: |
         xcodebuild -workspace perhourapp.xcworkspace \
                    -scheme perhourapp \
                    -configuration Release \
                    -archivePath build/perhourapp.xcarchive \
-                   clean archive
-        
+                   clean archive \
+                   CODE_SIGN_STYLE=Manual \
+                   PROVISIONING_PROFILE_SPECIFIER=$UUID \
+                   DEVELOPMENT_TEAM=${{ secrets.TEAM_ID }}
+                   
+    - name: Export IPA
+      run: |
         xcodebuild -exportArchive \
                    -archivePath build/perhourapp.xcarchive \
                    -exportOptionsPlist ExportOptions.plist \
-                   -exportPath build
+                   -exportPath build \
+                   -allowProvisioningUpdates
         
-    # 4. Upload artifact
+    # 4. Upload artifacts
     - name: Upload IPA
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       with:
-        name: perhourapp.ipa
-        path: build/perhourapp.ipas
+        name: perhourapp-${{ github.run_number }}.ipa
+        path: build/*.ipa
+        retention-days: 7
+        
+    - name: Upload Debug Symbols
+      uses: actions/upload-artifact@v4
+      if: ${{ always() }}
+      with:
+        name: dsyms-${{ github.run_number }}
+        path: build/*.xcarchive/dSYMs
+        retention-days: 30
