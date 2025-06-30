@@ -1,0 +1,54 @@
+name: Build IPA with Code Signing
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: macos-latest
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    # 1. Set up certificates and profiles
+    - name: Install Apple Certificate
+      uses: apple-actions/import-codesign-certs@v2
+      with:
+        p12-file-base64: ${{ secrets.CERTIFICATE_P12 }}
+        p12-password: ${{ secrets.CERTIFICATE_PASSWORD }}
+        create-keychain: true
+        keychain-password: ${{ secrets.KEYCHAIN_PASSWORD }}
+        
+    - name: Install Provisioning Profile
+      run: |
+        mkdir -p ~/Library/MobileDevice/Provisioning\ Profiles/
+        echo "${{ secrets.PROVISIONING_PROFILE }}" | base64 --decode > temp.mobileprovision
+        UUID=$(/usr/libexec/PlistBuddy -c "Print UUID" /dev/stdin <<< $(security cms -D -i temp.mobileprovision))
+        mv temp.mobileprovision ~/Library/MobileDevice/Provisioning\ Profiles/$UUID.mobileprovision
+        
+    # 2. Install dependencies
+    - name: Install CocoaPods
+      run: pod install
+      
+    # 3. Build and export IPA
+    - name: Build IPA
+      run: |
+        xcodebuild -workspace perhourapp.xcworkspace \
+                   -scheme perhourapp \
+                   -configuration Release \
+                   -archivePath build/perhourapp.xcarchive \
+                   clean archive
+        
+        xcodebuild -exportArchive \
+                   -archivePath build/perhourapp.xcarchive \
+                   -exportOptionsPlist ExportOptions.plist \
+                   -exportPath build
+        
+    # 4. Upload artifact
+    - name: Upload IPA
+      uses: actions/upload-artifact@v3
+      with:
+        name: perhourapp.ipa
+        path: build/perhourapp.ipas
