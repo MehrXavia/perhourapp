@@ -6,20 +6,29 @@ on:
   workflow_dispatch:
 
 jobs:
-  build:
+  build_ios:
     runs-on: macos-latest
     timeout-minutes: 30
 
     steps:
     - uses: actions/checkout@v4
 
-    # 1. Set up Flutter
+    # 1. Set up Flutter (iOS only)
     - uses: subosito/flutter-action@v2
       with:
-        flutter-version: '3.19.5' # Your Flutter version
+        flutter-version: '3.19.5'
         channel: 'stable'
+        cache: true
+        cache-key: flutter-ios
 
-    # 2. Set up code signing
+    # 2. Get only iOS dependencies (skip Android)
+    - name: Get Flutter Dependencies
+      run: |
+        flutter pub get
+        cd ios
+        pod install --repo-update
+
+    # 3. Set up iOS code signing
     - name: Install Apple Certificate
       uses: apple-actions/import-codesign-certs@v2
       with:
@@ -36,15 +45,10 @@ jobs:
         mv temp.mobileprovision ~/Library/MobileDevice/Provisioning\ Profiles/$UUID.mobileprovision
         echo "PROFILE_UUID=$UUID" >> $GITHUB_ENV
 
-    # 3. Get dependencies
-    - name: Flutter Pub Get
-      run: flutter pub get
-
-    # 4. Build iOS app
+    # 4. Build iOS IPA
     - name: Build IPA
       run: |
         cd ios
-        pod install
         xcodebuild -workspace Runner.xcworkspace \
                   -scheme Runner \
                   -configuration Release \
@@ -60,9 +64,10 @@ jobs:
                   -exportPath ../build \
                   -allowProvisioningUpdates
 
-    # 5. Upload artifact
+    # 5. Upload IPA artifact
     - name: Upload IPA
       uses: actions/upload-artifact@v4
       with:
         name: app-${{ github.run_number }}.ipa
         path: build/Runner.ipa
+        retention-days: 7
