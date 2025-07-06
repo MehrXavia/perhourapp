@@ -21,25 +21,39 @@ jobs:
         cache: true
         cache-key: flutter-ios-${{ hashFiles('pubspec.lock') }}
 
-    # 2. Remove Android folder (completely avoid Android issues)
-    - name: Remove Android folder (for iOS-only build)
+    # 2. Disable analytics to prevent Flutter CLI hang
+    - name: Disable Flutter analytics
+      run: |
+        flutter config --no-analytics
+        flutter config --no-cli-animations
+
+    # 3. Get Flutter dependencies BEFORE deleting android/
+    - name: Flutter pub get
+      run: |
+        echo "Running flutter pub get at $(date)"
+        flutter pub get
+        echo "Finished flutter pub get at $(date)"
+
+    # 4. Remove Android folder (after dependency resolution)
+    - name: Remove Android folder (iOS-only build)
       run: rm -rf android
 
-    # 3. Install iOS-specific dependencies
+    # 5. Setup CocoaPods (iOS dependencies)
     - name: Setup iOS environment
       run: |
         brew install cocoapods
         sudo gem install cocoapods
         pod setup
 
-    # 4. Get ONLY iOS dependencies
-    - name: Get iOS dependencies
+    # 6. Install iOS pods
+    - name: Install iOS pods
       run: |
-        flutter pub get
+        echo "Running pod install at $(date)"
         cd ios
-        pod install --repo-update --verbose
+        pod install --no-repo-update --verbose
+        echo "Finished pod install at $(date)"
 
-    # 5. Set up iOS code signing
+    # 7. Set up iOS code signing
     - name: Install Apple Certificate
       uses: apple-actions/import-codesign-certs@v2
       with:
@@ -56,7 +70,7 @@ jobs:
         mv temp.mobileprovision ~/Library/MobileDevice/Provisioning\ Profiles/$UUID.mobileprovision
         echo "PROFILE_UUID=$UUID" >> $GITHUB_ENV
 
-    # 6. Build iOS IPA
+    # 8. Build iOS IPA
     - name: Build IPA
       run: |
         cd ios
@@ -75,7 +89,7 @@ jobs:
                   -exportPath ../build \
                   -allowProvisioningUpdates
 
-    # 7. Upload IPA artifact
+    # 9. Upload IPA artifact for manual download
     - name: Upload IPA
       uses: actions/upload-artifact@v4
       with:
