@@ -28,7 +28,7 @@ jobs:
         flutter config --no-analytics
         flutter config --no-cli-animations
 
-    # 4. Recreate Android folder for plugin compatibility (connectivity_plus, etc.)
+    # 4. Generate Android folder temporarily for plugin config
     - name: Generate Android folder with V2 embedding
       run: |
         rm -rf android
@@ -39,32 +39,26 @@ jobs:
     # 5. Get Flutter dependencies
     - name: Flutter pub get
       run: |
-        echo "Running flutter pub get at $(date)"
         flutter pub get
         flutter pub upgrade
-        echo "Finished flutter pub get at $(date)"
 
-    # 6. Remove android folder (iOS-only build)
-    - name: Clean up Android folder
+    # 6. Remove Android folder (iOS-only build)
+    - name: Remove Android folder
       run: rm -rf android
 
-    # 7. Set up CocoaPods
-    - name: Install CocoaPods
+    # 7. Clean and install CocoaPods
+    - name: Clean and Install CocoaPods
       run: |
-        brew install cocoapods
-        sudo gem install cocoapods
-        pod setup
-
-    # 8. Clean pods and fix version conflict
-    - name: Clean CocoaPods cache and install pods
-      run: |
-        echo "Cleaning previous pods and lock file"
-        rm -f ios/Podfile.lock
-        rm -rf ios/Pods ios/.symlinks ios/Flutter/Flutter.framework
+        sudo gem install cocoapods -n /usr/local/bin
         cd ios
-        pod cache clean --all
-        pod repo update
+        rm -f Podfile.lock
+        rm -rf Pods .symlinks Flutter/Flutter.framework
+        pod deintegrate
         pod install --repo-update --verbose || { echo "❌ Pod install failed"; exit 1; }
+
+    # 8. Prebuild iOS (fail early if issue)
+    - name: Prebuild iOS (no codesign)
+      run: flutter build ios --release --no-codesign
 
     # 9. Set up iOS code signing
     - name: Install Apple Certificate
