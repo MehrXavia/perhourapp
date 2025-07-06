@@ -47,7 +47,7 @@ dependencies:
   flutter_rating_bar:
   url_launcher:
   shared_preferences:
-  sqflite:
+  # sqflite:
   path:
   http:
   dio:
