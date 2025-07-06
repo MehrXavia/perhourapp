@@ -28,26 +28,50 @@ jobs:
         flutter config --no-analytics
         flutter config --no-cli-animations
 
-    # 4. Full Clean
-    - name: Clean Project
+    # 4. Generate Android folder temporarily for plugin config
+    - name: Generate Android folder with V2 embedding
       run: |
+        rm -rf android
+        flutter create --platforms=android temp_app
+        mv temp_app/android ./android
+        rm -rf temp_app
         flutter clean
-        rm -rf ios/Pods ios/Podfile.lock ios/Runner.xcworkspace
-        rm -rf .dart_tool build pubspec.lock
+        rm -rf ios/Pods ios/Podfile.lock ios/Runner.xcworkspace 
+        rm -rf .dart_tool .packages pubspec.lock
         rm -rf ~/Library/Developer/Xcode/DerivedData
 
     # 5. Get Flutter dependencies
     - name: Flutter pub get
-      run: flutter pub get
+      run: |
+        flutter pub get
+        flutter pub upgrade
 
-    # 6. iOS Pod Install
-    - name: Install CocoaPods
+    # 6. Remove Android folder (iOS-only build)
+    - name: Remove Android folder
+      run: rm -rf android
+
+    # 7. Clean and install CocoaPods
+    - name: Clean and install CocoaPods
       run: |
         cd ios
-        pod deintegrate || true
-        pod install --repo-update
 
-    # 7. Set up iOS code signing
+        echo "🔧 Uninstalling any conflicting pods"
+        sudo gem uninstall cocoapods -a -x || true
+
+        echo "🔄 Installing stable CocoaPods"
+        sudo gem install cocoapods  -n /usr/local/bin
+
+        echo "🧹 Cleaning up Pod cache and pods"
+        pod deintegrate || true
+        pod cache clean --all
+
+        echo "📦 Installing Pods"
+        pod install --repo-update --verbose
+        pod update
+
+
+
+    # 8. Set up iOS code signing
     - name: Install Apple Certificate
       uses: apple-actions/import-codesign-certs@v2
       with:
@@ -56,7 +80,7 @@ jobs:
         keychain-name: ios-build-keychain
         keychain-password: ${{ secrets.KEYCHAIN_PASSWORD }}
 
-    # 8. Install Provisioning Profile
+    # 9. Install Provisioning Profile
     - name: Install Provisioning Profile
       run: |
         mkdir -p ~/Library/MobileDevice/Provisioning\ Profiles/
@@ -65,7 +89,7 @@ jobs:
         mv temp.mobileprovision ~/Library/MobileDevice/Provisioning\ Profiles/$UUID.mobileprovision
         echo "PROFILE_UUID=$UUID" >> $GITHUB_ENV
 
-    # 9. Build IPA
+    # 10. Build iOS IPA
     - name: Build IPA
       run: |
         cd ios
@@ -84,7 +108,7 @@ jobs:
                    -exportPath ../build \
                    -allowProvisioningUpdates
 
-    # 10. Upload IPA artifact
+    # 11. Upload IPA artifact
     - name: Upload IPA
       uses: actions/upload-artifact@v4
       with:
