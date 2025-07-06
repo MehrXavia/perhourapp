@@ -37,7 +37,7 @@ dependencies:
   cupertino_icons:
   steps_indicator:
 
-  firebase_core:
+  firebase_core: ^2.25.0
   image_picker:
   image_cropper:
   mime:
@@ -94,7 +94,7 @@ dependencies:
   readmore:
   google_map_marker_animation:
   share_plus:
-  firebase_messaging:
+  firebase_messaging: ^14.7.0
   map_picker:
   geocoding:
   loading_indicator:

@@ -1,100 +1,73 @@
-name: Flutter iOS IPA Build
+name: Flutter iOS Build
 
 on:
   push:
     branches: [main]
   workflow_dispatch:
 
-env:
-  FLUTTER_VERSION: '3.19.5'
-  IOS_DEPLOYMENT_TARGET: '12.0'
-  FIREBASE_CORE_VERSION: '10.25.0'
-  FIREBASE_INTERNAL_VERSION: '10.25.0'
-
 jobs:
   build_ios:
     runs-on: macos-latest
-    timeout-minutes: 40
+    timeout-minutes: 30
 
     steps:
-    # 1. Checkout code
+    # 1. Checkout source code
     - uses: actions/checkout@v4
 
     # 2. Set up Flutter
     - uses: subosito/flutter-action@v2
       with:
-        flutter-version: ${{ env.FLUTTER_VERSION }}
+        flutter-version: '3.19.5'
         channel: 'stable'
         cache: true
         cache-key: flutter-ios-${{ hashFiles('pubspec.lock') }}
 
-    # 3. Configure environment
-    - name: Set up iOS-only environment
+    # 3. Disable analytics
+    - name: Disable Flutter analytics
       run: |
-        flutter config --no-enable-android
         flutter config --no-analytics
-        mkdir -p ios/Pods
-        
-        # Set iOS deployment target
-        sed -i '' "s/FLUTTER_TARGET=.*/FLUTTER_TARGET='-target-platform=ios'/" ios/Flutter/Generated.xcconfig
-        echo "IPHONEOS_DEPLOYMENT_TARGET=$IOS_DEPLOYMENT_TARGET" >> ios/Flutter/Generated.xcconfig
-        echo "ENABLE_BITCODE=NO" >> ios/Flutter/Generated.xcconfig
+        flutter config --no-cli-animations
 
-    # 4. Get Flutter dependencies
-    - name: Get Flutter dependencies
+    # 4. Generate Android folder temporarily for plugin config
+    - name: Generate Android folder with V2 embedding
+      run: |
+        rm -rf android
+        flutter create --platforms=android temp_app
+        mv temp_app/android ./android
+        rm -rf temp_app
+
+    # 5. Get Flutter dependencies
+    - name: Flutter pub get
       run: |
         flutter pub get
+        flutter pub upgrade
 
-    # 5. Configure iOS project
-    - name: Configure iOS project
+    # 6. Remove Android folder (iOS-only build)
+    - name: Remove Android folder
+      run: rm -rf android
+
+    # 7. Clean and install CocoaPods
+    - name: Clean and install CocoaPods
       run: |
         cd ios
-        
-        # Update Podfile
-        sed -i '' "s/platform :ios, .*/platform :ios, '$IOS_DEPLOYMENT_TARGET'/" Podfile
-        
-        # Add Firebase version pins
-        if ! grep -q "FirebaseCore" Podfile; then
-          echo "pod 'FirebaseCore', '$FIREBASE_CORE_VERSION'" >> Podfile
-          echo "pod 'FirebaseCoreInternal', '$FIREBASE_INTERNAL_VERSION'" >> Podfile
-        else
-          sed -i '' "s/pod 'FirebaseCore', .*/pod 'FirebaseCore', '$FIREBASE_CORE_VERSION'/" Podfile
-          sed -i '' "s/pod 'FirebaseCoreInternal', .*/pod 'FirebaseCoreInternal', '$FIREBASE_INTERNAL_VERSION'/" Podfile
-        fi
-        
-        # Add post-install hook
-        echo "post_install do |installer|" >> Podfile
-        echo "  installer.pods_project.targets.each do |target|" >> Podfile
-        echo "    target.build_configurations.each do |config|" >> Podfile
-        echo "      config.build_settings['IPHONEOS_DEPLOYMENT_TARGET'] = '$IOS_DEPLOYMENT_TARGET'" >> Podfile
-        echo "      if target.name == 'FirebaseCoreInternal'" >> Podfile
-        echo "        config.build_settings['SWIFT_VERSION'] = '5.0'" >> Podfile
-        echo "        config.build_settings['SWIFT_COMPILATION_MODE'] = 'wholemodule'" >> Podfile
-        echo "      end" >> Podfile
-        echo "    end" >> Podfile
-        echo "  end" >> Podfile
-        echo "  installer.pods_project.build_configurations.each do |config|" >> Podfile
-        echo "    config.build_settings['EXCLUDED_ARCHS[sdk=iphonesimulator*]'] = 'arm64'" >> Podfile
-        echo "  end" >> Podfile
-        echo "end" >> Podfile
 
-    # 6. Install pods
-    - name: Install iOS pods
-      run: |
-        cd ios
-        sudo gem install cocoapods -v 1.15.2
-        pod repo update
-        pod install --verbose
+        echo "🔧 Uninstalling any conflicting pods"
+        sudo gem uninstall cocoapods -a -x || true
+
+        echo "🔄 Installing stable CocoaPods"
+        sudo gem install cocoapods  -n /usr/local/bin
+
+        echo "🧹 Cleaning up Pod cache and pods"
+        rm -rf Pods Podfile.lock .symlinks Flutter/Flutter.framework
+        pod deintegrate || true
         pod cache clean --all
 
-    # 7. Clean build environment
-    - name: Clean build
-      run: |
-        cd ios
-        rm -rf ~/Library/Developer/Xcode/DerivedData/*
-        xcodebuild clean -workspace Runner.xcworkspace -scheme Runner
+        echo "📦 Installing Pods"
+        pod install --repo-update --verbose
 
-    # 8. Set up code signing
+
+
+    # 8. Set up iOS code signing
     - name: Install Apple Certificate
       uses: apple-actions/import-codesign-certs@v2
       with:
@@ -103,6 +76,7 @@ jobs:
         keychain-name: ios-build-keychain
         keychain-password: ${{ secrets.KEYCHAIN_PASSWORD }}
 
+    # 9. Install Provisioning Profile
     - name: Install Provisioning Profile
       run: |
         mkdir -p ~/Library/MobileDevice/Provisioning\ Profiles/
@@ -111,29 +85,26 @@ jobs:
         mv temp.mobileprovision ~/Library/MobileDevice/Provisioning\ Profiles/$UUID.mobileprovision
         echo "PROFILE_UUID=$UUID" >> $GITHUB_ENV
 
-    # 9. Build IPA
+    # 10. Build iOS IPA
     - name: Build IPA
       run: |
         cd ios
         xcodebuild -workspace Runner.xcworkspace \
-                  -scheme Runner \
-                  -configuration Release \
-                  -archivePath ../build/Runner.xcarchive \
-                  clean archive \
-                  CODE_SIGN_STYLE=Manual \
-                  PROVISIONING_PROFILE_SPECIFIER=${{ env.PROFILE_UUID }} \
-                  DEVELOPMENT_TEAM=${{ secrets.TEAM_ID }} \
-                  OTHER_SWIFT_FLAGS="-Xfrontend -warn-long-function-bodies=500" \
-                  COMPILER_INDEX_STORE_ENABLE=NO \
-                  | xcpretty
+                   -scheme Runner \
+                   -configuration Release \
+                   -archivePath ../build/Runner.xcarchive \
+                   clean archive \
+                   CODE_SIGN_STYLE=Manual \
+                   PROVISIONING_PROFILE_SPECIFIER=${{ env.PROFILE_UUID }} \
+                   DEVELOPMENT_TEAM=${{ secrets.TEAM_ID }}
 
         xcodebuild -exportArchive \
-                  -archivePath ../build/Runner.xcarchive \
-                  -exportOptionsPlist ../ExportOptions.plist \
-                  -exportPath ../build \
-                  -allowProvisioningUpdates
+                   -archivePath ../build/Runner.xcarchive \
+                   -exportOptionsPlist ../ExportOptions.plist \
+                   -exportPath ../build \
+                   -allowProvisioningUpdates
 
-    # 10. Upload IPA
+    # 11. Upload IPA artifact
     - name: Upload IPA
       uses: actions/upload-artifact@v4
       with:
