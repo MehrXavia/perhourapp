@@ -56,7 +56,7 @@ jobs:
         sudo gem uninstall cocoapods -a -x || true
 
         echo "🔄 Installing stable CocoaPods"
-        sudo gem install cocoapods -v 1.14.3 -n /usr/local/bin
+        sudo gem install cocoapods  -n /usr/local/bin
 
         echo "🧹 Cleaning up Pod cache and pods"
         rm -rf Pods Podfile.lock .symlinks Flutter/Flutter.framework
