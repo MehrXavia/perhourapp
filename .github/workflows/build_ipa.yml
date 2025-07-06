@@ -41,6 +41,7 @@ jobs:
       run: |
         flutter pub get
         flutter pub upgrade
+        flutter pub upgrade --major-versions
 
     # 6. Remove Android folder (iOS-only build)
     - name: Remove Android folder
