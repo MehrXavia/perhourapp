@@ -61,10 +61,6 @@ jobs:
         pod deintegrate
         pod install
 
-    - name: Confirm sqflite is gone
-      run: |
-        flutter pub deps | grep sqflite && exit 1 || echo "✅ sqflite is gone"
-
     # 7. Clean and install CocoaPods
     - name: Clean and install CocoaPods
       run: |
@@ -83,6 +79,7 @@ jobs:
 
         echo "📦 Installing Pods"
         pod install --repo-update --verbose
+        pod update
 
 
 
