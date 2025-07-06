@@ -68,6 +68,7 @@ jobs:
         echo "📦 Installing Pods"
         pod install --repo-update --verbose
         pod update
+        flutter build ios --release
 
 
 
