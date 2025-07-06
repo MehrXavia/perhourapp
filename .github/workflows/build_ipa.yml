@@ -28,7 +28,7 @@ jobs:
         flutter config --no-analytics
         flutter config --no-cli-animations
 
-    # 4. Recreate Android folder with V2 embedding to avoid plugin failures
+    # 4. Recreate Android folder with V2 embedding to avoid plugin issues
     - name: Generate Android folder with V2 embedding
       run: |
         rm -rf android
@@ -36,14 +36,14 @@ jobs:
         mv temp_app/android ./android
         rm -rf temp_app
 
-    # 5. Fetch Flutter dependencies
+    # 5. Get Flutter dependencies
     - name: Flutter pub get
       run: |
         echo "Running flutter pub get at $(date)"
         flutter pub get
         echo "Finished flutter pub get at $(date)"
 
-    # 6. Remove android folder (we don’t need it anymore)
+    # 6. Remove android folder (not needed for iOS)
     - name: Clean up Android folder
       run: rm -rf android
 
@@ -54,15 +54,15 @@ jobs:
         sudo gem install cocoapods
         pod setup
 
-    # 8. Install iOS pod dependencies
+    # 8. Install iOS pod dependencies with logging
     - name: Install iOS pods
       run: |
         echo "Running pod install at $(date)"
         cd ios
-        pod install --no-repo-update --verbose
+        pod install --verbose || { echo "❌ Pod install failed"; exit 1; }
         echo "Finished pod install at $(date)"
 
-    # 9. Set up code signing certificate
+    # 9. Install code signing certificate
     - name: Install Apple Certificate
       uses: apple-actions/import-codesign-certs@v2
       with:
@@ -71,7 +71,7 @@ jobs:
         keychain-name: ios-build-keychain
         keychain-password: ${{ secrets.KEYCHAIN_PASSWORD }}
 
-    # 10. Install Provisioning Profile
+    # 10. Install provisioning profile
     - name: Install Provisioning Profile
       run: |
         mkdir -p ~/Library/MobileDevice/Provisioning\ Profiles/
@@ -80,26 +80,26 @@ jobs:
         mv temp.mobileprovision ~/Library/MobileDevice/Provisioning\ Profiles/$UUID.mobileprovision
         echo "PROFILE_UUID=$UUID" >> $GITHUB_ENV
 
-    # 11. Build IPA
+    # 11. Build iOS IPA
     - name: Build IPA
       run: |
         cd ios
         xcodebuild -workspace Runner.xcworkspace \
-                  -scheme Runner \
-                  -configuration Release \
-                  -archivePath ../build/Runner.xcarchive \
-                  clean archive \
-                  CODE_SIGN_STYLE=Manual \
-                  PROVISIONING_PROFILE_SPECIFIER=${{ env.PROFILE_UUID }} \
-                  DEVELOPMENT_TEAM=${{ secrets.TEAM_ID }}
+                   -scheme Runner \
+                   -configuration Release \
+                   -archivePath ../build/Runner.xcarchive \
+                   clean archive \
+                   CODE_SIGN_STYLE=Manual \
+                   PROVISIONING_PROFILE_SPECIFIER=${{ env.PROFILE_UUID }} \
+                   DEVELOPMENT_TEAM=${{ secrets.TEAM_ID }}
 
         xcodebuild -exportArchive \
-                  -archivePath ../build/Runner.xcarchive \
-                  -exportOptionsPlist ../ExportOptions.plist \
-                  -exportPath ../build \
-                  -allowProvisioningUpdates
+                   -archivePath ../build/Runner.xcarchive \
+                   -exportOptionsPlist ../ExportOptions.plist \
+                   -exportPath ../build \
+                   -allowProvisioningUpdates
 
-    # 12. Upload IPA artifact for download
+    # 12. Upload the built IPA as an artifact
     - name: Upload IPA
       uses: actions/upload-artifact@v4
       with:
