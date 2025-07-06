@@ -21,11 +21,9 @@ jobs:
         cache: true
         cache-key: flutter-ios-${{ hashFiles('pubspec.lock') }}
 
-    # 2. Explicitly disable Android
-    - name: Disable Android builds
-      run: |
-        flutter config --no-enable-android
-        echo "Android builds explicitly disabled"
+    # 2. Remove Android folder (completely avoid Android issues)
+    - name: Remove Android folder (for iOS-only build)
+      run: rm -rf android
 
     # 3. Install iOS-specific dependencies
     - name: Setup iOS environment
