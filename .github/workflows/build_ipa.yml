@@ -49,6 +49,18 @@ jobs:
     - name: Remove Android folder
       run: rm -rf android
 
+    - name: Full iOS clean
+    run: |
+      flutter clean
+      rm -rf ios/Pods
+      rm -rf ios/Podfile.lock
+      rm -rf ios/Runner.xcworkspace
+      rm -rf ~/Library/Developer/Xcode/DerivedData/*
+      flutter pub get
+      cd ios
+      pod deintegrate
+      pod install
+
     # 7. Clean and install CocoaPods
     - name: Clean and install CocoaPods
       run: |
