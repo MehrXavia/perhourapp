@@ -49,18 +49,16 @@ jobs:
     # 7. Clean and install CocoaPods
     - name: Clean and Install CocoaPods
       run: |
-        sudo gem install cocoapods -n /usr/local/bin
         cd ios
-        rm -f Podfile.lock
-        rm -rf Pods .symlinks Flutter/Flutter.framework
+        sudo gem install cocoapods -n /usr/local/bin
+        rm -rf Pods Podfile.lock .symlinks Flutter/Flutter.framework
         pod deintegrate
-        pod install --repo-update --verbose || { echo "❌ Pod install failed"; exit 1; }
+        pod cache clean --all
+        pod repo update
+        pod install --repo-update --verbose
 
-    # 8. Prebuild iOS (fail early if issue)
-    - name: Prebuild iOS (no codesign)
-      run: flutter build ios --release --no-codesign
 
-    # 9. Set up iOS code signing
+    # 8. Set up iOS code signing
     - name: Install Apple Certificate
       uses: apple-actions/import-codesign-certs@v2
       with:
@@ -69,7 +67,7 @@ jobs:
         keychain-name: ios-build-keychain
         keychain-password: ${{ secrets.KEYCHAIN_PASSWORD }}
 
-    # 10. Install Provisioning Profile
+    # 9. Install Provisioning Profile
     - name: Install Provisioning Profile
       run: |
         mkdir -p ~/Library/MobileDevice/Provisioning\ Profiles/
@@ -78,7 +76,7 @@ jobs:
         mv temp.mobileprovision ~/Library/MobileDevice/Provisioning\ Profiles/$UUID.mobileprovision
         echo "PROFILE_UUID=$UUID" >> $GITHUB_ENV
 
-    # 11. Build iOS IPA
+    # 10. Build iOS IPA
     - name: Build IPA
       run: |
         cd ios
@@ -97,7 +95,7 @@ jobs:
                    -exportPath ../build \
                    -allowProvisioningUpdates
 
-    # 12. Upload IPA artifact
+    # 11. Upload IPA artifact
     - name: Upload IPA
       uses: actions/upload-artifact@v4
       with:
