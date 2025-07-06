@@ -68,7 +68,6 @@ jobs:
         echo "📦 Installing Pods"
         pod install --repo-update --verbose
         pod update
-        flutter build ios --release
 
 
 
@@ -93,6 +92,7 @@ jobs:
     # 10. Build iOS IPA
     - name: Build IPA
       run: |
+        flutter build ios --release
         cd ios
         xcodebuild -workspace Runner.xcworkspace \
                    -scheme Runner \
