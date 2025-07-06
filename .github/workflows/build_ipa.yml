@@ -62,7 +62,6 @@ jobs:
         sudo gem install cocoapods  -n /usr/local/bin
 
         echo "🧹 Cleaning up Pod cache and pods"
-        rm -rf Pods Podfile.lock .symlinks Flutter/Flutter.framework
         pod deintegrate || true
         pod cache clean --all
 
