@@ -41,6 +41,7 @@ jobs:
       run: |
         echo "Running flutter pub get at $(date)"
         flutter pub get
+        flutter pub update
         echo "Finished flutter pub get at $(date)"
 
     # 6. Remove android folder (iOS-only build)
