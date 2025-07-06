@@ -22,13 +22,13 @@ jobs:
         cache: true
         cache-key: flutter-ios-${{ hashFiles('pubspec.lock') }}
 
-    # 3. Disable analytics to avoid CLI hang
+    # 3. Disable analytics
     - name: Disable Flutter analytics
       run: |
         flutter config --no-analytics
         flutter config --no-cli-animations
 
-    # 4. Recreate Android folder with V2 embedding to avoid plugin issues
+    # 4. Recreate Android folder for plugin compatibility (connectivity_plus, etc.)
     - name: Generate Android folder with V2 embedding
       run: |
         rm -rf android
@@ -43,26 +43,29 @@ jobs:
         flutter pub get
         echo "Finished flutter pub get at $(date)"
 
-    # 6. Remove android folder (not needed for iOS)
+    # 6. Remove android folder (iOS-only build)
     - name: Clean up Android folder
       run: rm -rf android
 
-    # 7. Install CocoaPods
-    - name: Setup iOS environment
+    # 7. Set up CocoaPods
+    - name: Install CocoaPods
       run: |
         brew install cocoapods
         sudo gem install cocoapods
         pod setup
 
-    # 8. Install iOS pod dependencies with logging
-    - name: Install iOS pods
+    # 8. Clean pods and fix version conflict
+    - name: Clean CocoaPods cache and install pods
       run: |
-        echo "Running pod install at $(date)"
+        echo "Cleaning previous pods and lock file"
+        rm -f ios/Podfile.lock
+        rm -rf ios/Pods ios/.symlinks ios/Flutter/Flutter.framework
         cd ios
-        pod install --verbose || { echo "❌ Pod install failed"; exit 1; }
-        echo "Finished pod install at $(date)"
+        pod cache clean --all
+        pod repo update
+        pod install --repo-update --verbose || { echo "❌ Pod install failed"; exit 1; }
 
-    # 9. Install code signing certificate
+    # 9. Set up iOS code signing
     - name: Install Apple Certificate
       uses: apple-actions/import-codesign-certs@v2
       with:
@@ -71,7 +74,7 @@ jobs:
         keychain-name: ios-build-keychain
         keychain-password: ${{ secrets.KEYCHAIN_PASSWORD }}
 
-    # 10. Install provisioning profile
+    # 10. Install Provisioning Profile
     - name: Install Provisioning Profile
       run: |
         mkdir -p ~/Library/MobileDevice/Provisioning\ Profiles/
@@ -99,7 +102,7 @@ jobs:
                    -exportPath ../build \
                    -allowProvisioningUpdates
 
-    # 12. Upload the built IPA as an artifact
+    # 12. Upload IPA artifact
     - name: Upload IPA
       uses: actions/upload-artifact@v4
       with:
