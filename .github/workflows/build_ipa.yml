@@ -78,7 +78,9 @@ jobs:
     # 10. Build and Archive IPA
     - name: Build and Archive IPA
       run: |
+        flutter build ios --release --no-codesign
         cd ios
+        pod install --repo-update
         xcodebuild -workspace Runner.xcworkspace \
                    -scheme Runner \
                    -configuration Release \
