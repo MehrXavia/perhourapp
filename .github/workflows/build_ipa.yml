@@ -78,12 +78,12 @@ jobs:
       run: |
         cd ios
         xcodebuild -workspace Runner.xcworkspace \
-          -scheme Runner \
-          -configuration Release \
-          -archivePath ../build/Runner.xcarchive \
-          -xcconfig Runner/CIExportConfig.xcconfig \
-          clean archive \
-          OTHER_CODE_SIGN_FLAGS="--keychain ios-build-keychain"
+                    -scheme Runner \
+                    -configuration Release \
+                    -archivePath ../build/Runner.xcarchive \
+                    clean archive \
+                    OTHER_CODE_SIGN_FLAGS="--keychain ios-build-keychain"
+
 
 
     # 12. Export IPA
