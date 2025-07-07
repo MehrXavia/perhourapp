@@ -27,7 +27,7 @@ flutter_ios_podfile_setup
 
 target 'Runner' do
   use_frameworks!
-  pod 'GoogleMaps'
+  pod 'GoogleMaps' # Optional, remove if unused
 
   flutter_install_all_ios_pods File.dirname(File.realpath(__FILE__))
 
@@ -38,18 +38,15 @@ end
 
 post_install do |installer|
   installer.pods_project.targets.each do |target|
-    target.build_configurations.each do |config|
-      config.build_settings['IPHONEOS_DEPLOYMENT_TARGET'] = '16.0'
-      config.build_settings['SWIFT_VERSION'] = '5.0'
-      config.build_settings['VALID_ARCHS'] = 'arm64' 
-      if target.name == 'FirebaseCoreInternal'
-        config.build_settings['SWIFT_COMPILATION_MODE'] = 'wholemodule'
-      end
+    flutter_additional_ios_build_settings(target)
 
-      if target.name == 'sqflite'
-        config.build_settings['OTHER_LDFLAGS'] ||= ['$(inherited)', '-lsqlite3']
+    target.build_configurations.each do |config|
+      xcconfig_path = config.base_configuration_reference.real_path
+      if File.exist?(xcconfig_path)
+        xcconfig = File.read(xcconfig_path)
+        xcconfig_mod = xcconfig.gsub(/DT_TOOLCHAIN_DIR/, "TOOLCHAIN_DIR")
+        File.open(xcconfig_path, "w") { |file| file.write(xcconfig_mod) }
       end
     end
   end
 end
-
