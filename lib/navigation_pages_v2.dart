@@ -3,7 +3,7 @@ import 'package:onservice24/src/admin/notifications/presentation/pages/notificat
 import 'package:onservice24/src/admin/service/presentation/pages/sevice_page.dart';
 import 'package:onservice24/src/user/favourite/presentation/pages/favourite/favourite_page.dart';
 import 'package:onservice24/src/user/service_user/presentation/user_service/pages/sevice_user_page.dart';
-import 'package:share_plus/share_plus.dart';
+// import 'package:share_plus/share_plus.dart';
 
 import 'core/locationservice/locationservice.dart';
 import 'core/utils/helper_methods.dart';
@@ -94,10 +94,10 @@ class NavigationPagesV2 extends StatelessWidget {
                                //   });
                                   streamStateInitial.setData(Args(isShow: false,isAdmin: isAdmin));
                                 } else if (index == 2) {
-                                  Share.share(
-                                      ' android URL \n  https://play.google.com/store/apps/details?id=com.perHourApp.app \n'
-                                         // ' IOS Url \n https://example.com ',
-                                  );
+                                  // Share.share(
+                                  //     ' android URL \n  https://play.google.com/store/apps/details?id=com.perHourApp.app \n'
+                                  //        // ' IOS Url \n https://example.com ',
+                                  // );
                                 } else if (index == 3) {
                                   // DialogsManager.showAlertDialog(
                                   //   context,
