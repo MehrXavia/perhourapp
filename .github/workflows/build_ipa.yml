@@ -22,7 +22,7 @@ jobs:
         cache: true
         cache-key: flutter-ios-${{ hashFiles('pubspec.lock') }}
 
-    # 3. Disable analytics
+    # 3. Disable Flutter analytics
     - name: Disable Flutter analytics
       run: |
         flutter config --no-analytics
@@ -50,27 +50,17 @@ jobs:
     - name: Remove Android folder
       run: rm -rf android
 
-    # 7. Build Flutter iOS frameworks for CocoaPods
-    - name: Build Flutter iOS Frameworks
-      run: flutter build ios-framework --no-universal --output=ios/Flutter
-
-    # 8. Clean and install CocoaPods
-    - name: Clean and install CocoaPods
+    # 7. Clean and install CocoaPods
+    - name: Install CocoaPods
       run: |
         cd ios
-
-        echo "🔄 Installing stable CocoaPods"
         sudo gem install cocoapods -n /usr/local/bin
-
-        echo "🧹 Cleaning up Pod cache and pods"
         pod deintegrate || true
         pod cache clean --all
-
-        echo "📦 Installing Pods"
-        pod install --repo-update --verbose
+        pod install --repo-update
         pod update
 
-    # 9. Set up iOS code signing
+    # 8. Install Apple Certificate
     - name: Install Apple Certificate
       uses: apple-actions/import-codesign-certs@v2
       with:
@@ -79,7 +69,7 @@ jobs:
         keychain-name: ios-build-keychain
         keychain-password: ${{ secrets.KEYCHAIN_PASSWORD }}
 
-    # 10. Install Provisioning Profile
+    # 9. Install Provisioning Profile
     - name: Install Provisioning Profile
       run: |
         mkdir -p ~/Library/MobileDevice/Provisioning\ Profiles/
@@ -88,30 +78,18 @@ jobs:
         mv temp.mobileprovision ~/Library/MobileDevice/Provisioning\ Profiles/$UUID.mobileprovision
         echo "PROFILE_UUID=$UUID" >> $GITHUB_ENV
 
-    # 11. Build iOS IPA
-    - name: Build IPA
+    # 10. Build IPA using Flutter
+    - name: Flutter build IPA
       run: |
-        flutter build ios --release
-        cd ios
-        xcodebuild -workspace Runner.xcworkspace \
-                   -scheme Runner \
-                   -configuration Release \
-                   -archivePath ../build/Runner.xcarchive \
-                   clean archive \
-                   CODE_SIGN_STYLE=Manual \
-                   PROVISIONING_PROFILE_SPECIFIER=${{ env.PROFILE_UUID }} \
-                   DEVELOPMENT_TEAM=${{ secrets.TEAM_ID }}
+        flutter build ipa --release \
+          --export-options-plist=ios/ExportOptions.plist \
+          --codesign \
+          --build-name=1.0.${{ github.run_number }}
 
-        xcodebuild -exportArchive \
-                   -archivePath ../build/Runner.xcarchive \
-                   -exportOptionsPlist ../ExportOptions.plist \
-                   -exportPath ../build \
-                   -allowProvisioningUpdates
-
-    # 12. Upload IPA artifact
+    # 11. Upload IPA artifact
     - name: Upload IPA
       uses: actions/upload-artifact@v4
       with:
         name: onservice24-${{ github.run_number }}.ipa
-        path: build/Runner.ipa
+        path: build/ios/ipa/*.ipa
         retention-days: 7
