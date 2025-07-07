@@ -53,10 +53,8 @@ jobs:
     # 7. Clean and install CocoaPods
     - name: Clean and install CocoaPods
       run: |
+        flutter build ios-framework --no-universal --output=ios/Flutter
         cd ios
-
-        echo "🔧 Uninstalling any conflicting pods"
-        sudo gem uninstall cocoapods -a -x || true
 
         echo "🔄 Installing stable CocoaPods"
         sudo gem install cocoapods  -n /usr/local/bin
