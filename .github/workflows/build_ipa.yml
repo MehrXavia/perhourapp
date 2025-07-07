@@ -19,7 +19,6 @@ jobs:
       with:
         flutter-version: '3.29.3'
         channel: 'stable'
-        
 
     # 3. Disable analytics
     - name: Disable Flutter analytics
@@ -27,40 +26,28 @@ jobs:
         flutter config --no-analytics
         flutter config --no-cli-animations
 
-    # 4. Generate Android folder temporarily for plugin config
-    - name: Generate Android folder with V2 embedding
+    # 4. Clean and reset project
+    - name: Clean Flutter project and iOS build
       run: |
-        rm -rf android
-        flutter create --platforms=android temp_app
-        mv temp_app/android ./android
-        rm -rf temp_app
         flutter clean
-        rm -rf ios/Pods/ ios/Podfile.lock ios/Runner.xcworkspace 
+        rm -rf ios/Pods ios/Podfile.lock ios/Runner.xcworkspace
         rm -rf .dart_tool .packages pubspec.lock
         rm -rf ~/Library/Developer/Xcode/DerivedData
 
     # 5. Get Flutter dependencies
     - name: Flutter pub get
-      run: |
-        flutter pub get
-        
-        flutter pub upgrade
+      run: flutter pub get
 
-    # 6.5. Generate localization files
+    # 6. Generate localization (optional)
     - name: Generate localizations
       run: flutter gen-l10n
-
-    # 6. Remove Android folder (iOS-only build)
-    - name: Remove Android folder
-      run: rm -rf android
 
     # 7. Install CocoaPods
     - name: Install CocoaPods
       run: |
         cd ios
         sudo gem install cocoapods -n /usr/local/bin
-        
-        pod install --repo-update --verbose
+        pod install --repo-update
 
     # 8. Install Apple certificate
     - name: Install Apple Certificate
@@ -80,28 +67,36 @@ jobs:
         mv temp.mobileprovision ~/Library/MobileDevice/Provisioning\ Profiles/$UUID.mobileprovision
         echo "PROFILE_UUID=$UUID" >> $GITHUB_ENV
 
-    # 10. Build and Archive IPA
-    - name: Build and Archive IPA
+    # 10. Build iOS Archive (IPA)
+    - name: Build IPA
+      run: |
+        flutter build ios --release \
+          --no-codesign
+
+    # 11. Archive with Xcode
+    - name: Xcode Archive
       run: |
         cd ios
-        pod install --repo-update
         xcodebuild -workspace Runner.xcworkspace \
                    -scheme Runner \
                    -configuration Release \
                    -archivePath ../build/Runner.xcarchive \
-                   clean archive \
+                   archive \
                    CODE_SIGN_STYLE=Manual \
-                   PROVISIONING_PROFILE_SPECIFIER=${{ env.PROFILE_UUID }} \
                    DEVELOPMENT_TEAM=${{ secrets.TEAM_ID }} \
+                   PROVISIONING_PROFILE_SPECIFIER=$PROFILE_UUID \
                    OTHER_CODE_SIGN_FLAGS="--keychain ios-build-keychain"
 
+    # 12. Export IPA
+    - name: Export IPA
+      run: |
         xcodebuild -exportArchive \
-                   -archivePath ../build/Runner.xcarchive \
-                   -exportOptionsPlist ../ExportOptions.plist \
-                   -exportPath ../build \
+                   -archivePath build/Runner.xcarchive \
+                   -exportOptionsPlist ExportOptions.plist \
+                   -exportPath build \
                    -allowProvisioningUpdates
 
-    # 11. Upload IPA artifact
+    # 13. Upload IPA artifact
     - name: Upload IPA
       uses: actions/upload-artifact@v4
       with:
