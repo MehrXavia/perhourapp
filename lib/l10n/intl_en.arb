@@ -159,5 +159,11 @@
   "usd": "USD",
    "update_to_latest_version": "Update To The Latest Version",
   "new_version_available": "There is a new updated version, please update the application now to enjoy better service",
-  "update_now": "Update Now"
+  "update_now": "Update Now",
+  "you_do_not_have_an_activated_package_in_your_account_and_it_will_not_appear": "You do not have an activated package in your account and it will not appear.",
+  "your_account_in_the_search_list_on_the_map_or_add": "Your account in the search list on the map or add...",
+  "new_services_or_view_your_profile": "New services or view your profile",
+  "we_ask_you_to_subscribe_and_activate_a_new_package_to_enjoy": "We ask you to subscribe and activate a new package to enjoy...",
+  "application_services": "Application Services",
+  "activate_a_new_package": "Activate a New Package"
 }
