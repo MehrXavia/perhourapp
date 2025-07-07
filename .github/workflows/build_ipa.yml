@@ -50,20 +50,14 @@ jobs:
     - name: Remove Android folder
       run: rm -rf android
 
-
-    # 7. Clean and install CocoaPods
-    - name: Clean and install CocoaPods
+    # 7. Install CocoaPods
+    - name: Install CocoaPods
       run: |
         cd ios
-
-        echo "🔄 Installing stable CocoaPods"
-        sudo gem install cocoapods -n /usr/local/bin 
-
-        echo "📦 Installing Pods"
+        sudo gem install cocoapods -n /usr/local/bin
         pod install --repo-update --verbose
-        pod update
 
-    # 8. Set up iOS code signing
+    # 8. Install Apple certificate
     - name: Install Apple Certificate
       uses: apple-actions/import-codesign-certs@v2
       with:
@@ -72,7 +66,7 @@ jobs:
         keychain-name: ios-build-keychain
         keychain-password: ${{ secrets.KEYCHAIN_PASSWORD }}
 
-    # 9. Install Provisioning Profile
+    # 9. Install provisioning profile
     - name: Install Provisioning Profile
       run: |
         mkdir -p ~/Library/MobileDevice/Provisioning\ Profiles/
@@ -81,8 +75,8 @@ jobs:
         mv temp.mobileprovision ~/Library/MobileDevice/Provisioning\ Profiles/$UUID.mobileprovision
         echo "PROFILE_UUID=$UUID" >> $GITHUB_ENV
 
-    # 10. Build iOS IPA
-    - name: Build IPA
+    # 10. Build and Archive IPA
+    - name: Build and Archive IPA
       run: |
         cd ios
         xcodebuild -workspace Runner.xcworkspace \
@@ -92,7 +86,8 @@ jobs:
                    clean archive \
                    CODE_SIGN_STYLE=Manual \
                    PROVISIONING_PROFILE_SPECIFIER=${{ env.PROFILE_UUID }} \
-                   DEVELOPMENT_TEAM=${{ secrets.TEAM_ID }}
+                   DEVELOPMENT_TEAM=${{ secrets.TEAM_ID }} \
+                   OTHER_CODE_SIGN_FLAGS="--keychain ios-build-keychain"
 
         xcodebuild -exportArchive \
                    -archivePath ../build/Runner.xcarchive \
