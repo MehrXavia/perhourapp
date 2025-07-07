@@ -50,11 +50,8 @@ jobs:
     - name: Remove Android folder
       run: rm -rf android
 
-    # 7. Build Flutter iOS frameworks for CocoaPods
-    - name: Build Flutter iOS Frameworks
-      run: flutter build ios-framework --no-universal --output=ios/Flutter
 
-    # 8. Clean and install CocoaPods
+    # 7. Clean and install CocoaPods
     - name: Clean and install CocoaPods
       run: |
         cd ios
@@ -66,7 +63,7 @@ jobs:
         pod install --repo-update --verbose
         pod update
 
-    # 9. Set up iOS code signing
+    # 8. Set up iOS code signing
     - name: Install Apple Certificate
       uses: apple-actions/import-codesign-certs@v2
       with:
@@ -75,7 +72,7 @@ jobs:
         keychain-name: ios-build-keychain
         keychain-password: ${{ secrets.KEYCHAIN_PASSWORD }}
 
-    # 10. Install Provisioning Profile
+    # 9. Install Provisioning Profile
     - name: Install Provisioning Profile
       run: |
         mkdir -p ~/Library/MobileDevice/Provisioning\ Profiles/
@@ -84,10 +81,9 @@ jobs:
         mv temp.mobileprovision ~/Library/MobileDevice/Provisioning\ Profiles/$UUID.mobileprovision
         echo "PROFILE_UUID=$UUID" >> $GITHUB_ENV
 
-    # 11. Build iOS IPA
+    # 10. Build iOS IPA
     - name: Build IPA
       run: |
-        flutter build ios --release
         cd ios
         xcodebuild -workspace Runner.xcworkspace \
                    -scheme Runner \
@@ -104,7 +100,7 @@ jobs:
                    -exportPath ../build \
                    -allowProvisioningUpdates
 
-    # 12. Upload IPA artifact
+    # 11. Upload IPA artifact
     - name: Upload IPA
       uses: actions/upload-artifact@v4
       with:
