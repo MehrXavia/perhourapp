@@ -53,8 +53,10 @@ jobs:
     # 7. Install CocoaPods
     - name: Install CocoaPods
       run: |
+        
         cd ios
         sudo gem install cocoapods -n /usr/local/bin
+        
         pod install --repo-update --verbose
 
     # 8. Install Apple certificate

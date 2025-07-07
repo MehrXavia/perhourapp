@@ -95,7 +95,7 @@ dependencies:
   country_picker:
   readmore:
   google_map_marker_animation:
-  share_plus: ^7.1.0
+  share_plus: 7.2.2
   firebase_messaging: ^14.7.0
   map_picker:
   geocoding:
