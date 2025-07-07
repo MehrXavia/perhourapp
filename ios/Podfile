@@ -40,13 +40,18 @@ post_install do |installer|
   installer.pods_project.targets.each do |target|
     target.build_configurations.each do |config|
       config.build_settings['IPHONEOS_DEPLOYMENT_TARGET'] = '16.0'
-      config.build_settings['SWIFT_VERSION'] = '5.0' 
+      config.build_settings['SWIFT_VERSION'] = '5.0'
+      config.build_settings['VALID_ARCHS'] = 'arm64' 
       if target.name == 'FirebaseCoreInternal'
         config.build_settings['SWIFT_COMPILATION_MODE'] = 'wholemodule'
       end
 
       if target.name == 'sqflite'
         config.build_settings['OTHER_LDFLAGS'] ||= ['$(inherited)', '-lsqlite3']
+      end
+      if target.name == 'connectivity_plus'
+        config.build_settings['GCC_PREPROCESSOR_DEFINITIONS'] ||= ['$(inherited)']
+        config.build_settings['GCC_PREPROCESSOR_DEFINITIONS'] << 'CONNECTIVITY_PLUS_VERSION=500000'
       end
     end
   end
