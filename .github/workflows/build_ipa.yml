@@ -19,8 +19,7 @@ jobs:
       with:
         flutter-version: '3.22.2'
         channel: 'stable'
-        cache: true
-        cache-key: flutter-ios-${{ hashFiles('pubspec.lock') }}
+        
 
     # 3. Disable analytics
     - name: Disable Flutter analytics
