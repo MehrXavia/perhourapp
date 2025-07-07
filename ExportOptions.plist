@@ -7,11 +7,11 @@
   <key>signingStyle</key>
   <string>manual</string>
   <key>teamID</key>
-  <string>${{ secrets.TEAM_ID }}</string>
+  <string>5RQQ7W3ZKJ</string>
   <key>provisioningProfiles</key>
   <dict>
     <key>com.perhourapp.ios</key>
-    <string>${{ secrets.PROVISIONING_PROFILE }}</string>
+    <string>perHourApp Distribution</string>
   </dict>
   <key>uploadBitcode</key>
   <false/>
