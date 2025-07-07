@@ -3,7 +3,7 @@
 <plist version="1.0">
 <dict>
   <key>method</key>
-  <string>app-store</string>
+  <string>app-store-connect</string>
   <key>signingStyle</key>
   <string>manual</string>
   <key>teamID</key>
@@ -11,7 +11,7 @@
   <key>provisioningProfiles</key>
   <dict>
     <key>com.perhourapp.ios</key>
-    <string>perHourApp Distribution</string>
+    <string>9d850654-ceac-4960-badc-12d7cff662b0</string>
   </dict>
   <key>uploadBitcode</key>
   <false/>
