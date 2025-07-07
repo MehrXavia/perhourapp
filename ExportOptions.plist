@@ -2,20 +2,20 @@
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
-    <key>method</key>
-    <string>app-store</string>
-    <key>teamID</key>
-    <string>${{ secrets.TEAM_ID }}</string>
-    <key>provisioningProfiles</key>
-    <dict>
-        <key>com.perhourapp.ios</key>
-        <string>$PROFILE_UUID</string>
-    </dict>
-    <key>signingCertificate</key>
-    <string>iPhone Developer</string>
-    <key>uploadBitcode</key>
-    <false/>
-    <key>compileBitcode</key>
-    <false/>
+  <key>method</key>
+  <string>app-store</string>
+  <key>signingStyle</key>
+  <string>manual</string>
+  <key>teamID</key>
+  <string>${{ secrets.TEAM_ID }}</string>
+  <key>provisioningProfiles</key>
+  <dict>
+    <key>com.perhourapp.ios</key>
+    <string>${{ secrets.PROVISIONING_PROFILE }}</string>
+  </dict>
+  <key>uploadBitcode</key>
+  <false/>
+  <key>compileBitcode</key>
+  <true/>
 </dict>
 </plist>
