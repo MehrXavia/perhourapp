@@ -107,7 +107,7 @@ dependencies:
   local_auth:
   pulsator:
   font_awesome_flutter:
-  package_info_plus:	^6.0.0
+  #package_info_plus: 6.0.0
   intl:
   flutter_local_notifications:
 
