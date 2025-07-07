@@ -94,11 +94,19 @@ jobs:
                    -exportOptionsPlist ExportOptions.plist \
                    -exportPath build \
                    -allowProvisioningUpdates
+    # 13. Path
+    - name: List IPA location
+      run: |
+        echo "Contents of build folder:"
+        find build -type f
 
-    # 13. Upload IPA artifact
+
+    # 14. Upload IPA artifact
     - name: Upload IPA
       uses: actions/upload-artifact@v4
       with:
-        name: onservice24-${{ github.run_number }}.ipa
-        path: build/Runner.ipa
+        name: perhourapp-${{ github.run_number }}.ipa
+        path: build/**/*.ipa
         retention-days: 7
+
+
