@@ -49,10 +49,6 @@ post_install do |installer|
       if target.name == 'sqflite'
         config.build_settings['OTHER_LDFLAGS'] ||= ['$(inherited)', '-lsqlite3']
       end
-      if target.name == 'connectivity_plus'
-        config.build_settings['GCC_PREPROCESSOR_DEFINITIONS'] ||= ['$(inherited)']
-        config.build_settings['GCC_PREPROCESSOR_DEFINITIONS'] << 'CONNECTIVITY_PLUS_VERSION=500000'
-      end
     end
   end
 end

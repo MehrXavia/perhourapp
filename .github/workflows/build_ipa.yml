@@ -1,76 +1,113 @@
-name: Flutter iOS Build
+name: Flutter iOS IPA Build
 
 on:
   push:
     branches: [main]
   workflow_dispatch:
 
+env:
+  FLUTTER_VERSION: '3.22.2'  # Latest stable version
+  IOS_DEPLOYMENT_TARGET: '13.0'
+  XCODE_VERSION: '15.4'
+
 jobs:
   build_ios:
     runs-on: macos-latest
-    timeout-minutes: 30
+    timeout-minutes: 60
 
     steps:
-    # 1. Checkout source code
+    # 1. Checkout code
     - uses: actions/checkout@v4
 
-    # 2. Set up Flutter
+    # 2. Set up Xcode version
+    - name: Select Xcode version
+      run: |
+        sudo xcode-select -s /Applications/Xcode_${{ env.XCODE_VERSION }}.app/Contents/Developer
+        xcodebuild -version
+
+    # 3. Set up Flutter
     - uses: subosito/flutter-action@v2
       with:
-        flutter-version: '3.19.5'
+        flutter-version: ${{ env.FLUTTER_VERSION }}
         channel: 'stable'
         cache: true
         cache-key: flutter-ios-${{ hashFiles('pubspec.lock') }}
 
-    # 3. Disable analytics
-    - name: Disable Flutter analytics
+    # 4. Configure environment and clean caches
+    - name: Set up iOS environment
       run: |
+        flutter config --no-enable-android
         flutter config --no-analytics
-        flutter config --no-cli-animations
+        
+        # Clean all problematic caches
+        flutter pub cache repair
+        rm -rf $HOME/.pub-cache/hosted/pub.dev/connectivity_plus-*
+        rm -rf ios/Pods
+        rm -rf ~/Library/Developer/Xcode/DerivedData/*
 
-    # 4. Generate Android folder temporarily for plugin config
-    - name: Generate Android folder with V2 embedding
+    # 5. Fix connectivity_plus version
+    - name: Fix connectivity_plus version
       run: |
-        rm -rf android
-        flutter create --platforms=android temp_app
-        mv temp_app/android ./android
-        rm -rf temp_app
-        flutter clean
-        rm -rf ios/Pods ios/Podfile.lock ios/Runner.xcworkspace 
-        rm -rf .dart_tool .packages pubspec.lock
-        rm -rf ~/Library/Developer/Xcode/DerivedData
+        # Update to a compatible version
+        sed -i '' "s/connectivity_plus: .*/connectivity_plus: 5.0.0 # Fixed version for build/" pubspec.yaml
+        
+        # Update pubspec.lock if exists
+        if [ -f "pubspec.lock" ]; then
+          sed -i '' "s/connectivity_plus: .*/connectivity_plus: 5.0.0/" pubspec.lock
+        fi
 
-    # 5. Get Flutter dependencies
-    - name: Flutter pub get
+    # 6. Get Flutter dependencies
+    - name: Get Flutter dependencies
       run: |
         flutter pub get
-        flutter pub upgrade
 
-    # 6. Remove Android folder (iOS-only build)
-    - name: Remove Android folder
-      run: rm -rf android
-
-    # 7. Build Flutter iOS frameworks for CocoaPods
-    - name: Build Flutter iOS Frameworks
-      run: flutter build ios-framework --no-universal --output=ios/Flutter
-
-    # 8. Clean and install CocoaPods
-    - name: Clean and install CocoaPods
+    # 7. Configure iOS project
+    - name: Configure iOS project
       run: |
         cd ios
+        
+        # Update Podfile
+        sed -i '' "s/platform :ios, .*/platform :ios, '$IOS_DEPLOYMENT_TARGET'/" Podfile
+        
+        # Add post-install hook
+        cat <<EOT >> Podfile
+        post_install do |installer|
+          installer.pods_project.targets.each do |target|
+            target.build_configurations.each do |config|
+              config.build_settings['IPHONEOS_DEPLOYMENT_TARGET'] = '$IOS_DEPLOYMENT_TARGET'
+              config.build_settings['GCC_WARN_INHIBIT_ALL_WARNINGS'] = 'YES'
+              config.build_settings['SWIFT_SUPPRESS_WARNINGS'] = 'YES'
+              config.build_settings['APPLICATION_EXTENSION_API_ONLY'] = 'NO'
+              config.build_settings['SWIFT_VERSION'] = '5.0'
+              config.build_settings['SWIFT_COMPILATION_MODE'] = 'wholemodule'
+              
+              # Specific fix for connectivity_plus
+              if target.name == 'connectivity_plus'
+                config.build_settings['GCC_PREPROCESSOR_DEFINITIONS'] ||= ['$(inherited)']
+                config.build_settings['GCC_PREPROCESSOR_DEFINITIONS'] << 'CONNECTIVITY_PLUS_VERSION=500000'
+              end
+            end
+          end
+          
+          # Fix architecture issues
+          installer.pods_project.build_configurations.each do |config|
+            config.build_settings['EXCLUDED_ARCHS[sdk=iphonesimulator*]'] = 'arm64'
+            config.build_settings['ONLY_ACTIVE_ARCH'] = 'YES'
+            config.build_settings['VALID_ARCHS'] = 'arm64'
+          end
+        end
+        EOT
 
-        echo "🔄 Installing stable CocoaPods"
-        sudo gem install cocoapods -n /usr/local/bin
-
-        echo "🧹 Cleaning up Pod cache and pods"
-        pod deintegrate || true
+    # 8. Install pods
+    - name: Install iOS pods
+      run: |
+        cd ios
+        sudo gem install cocoapods -v 1.15.2
+        pod repo update
+        pod install --verbose
         pod cache clean --all
 
-        echo "📦 Installing Pods"
-        pod install --repo-update --verbose
-        pod update
-
-    # 9. Set up iOS code signing
+    # 9. Set up code signing
     - name: Install Apple Certificate
       uses: apple-actions/import-codesign-certs@v2
       with:
@@ -79,7 +116,6 @@ jobs:
         keychain-name: ios-build-keychain
         keychain-password: ${{ secrets.KEYCHAIN_PASSWORD }}
 
-    # 10. Install Provisioning Profile
     - name: Install Provisioning Profile
       run: |
         mkdir -p ~/Library/MobileDevice/Provisioning\ Profiles/
@@ -88,27 +124,42 @@ jobs:
         mv temp.mobileprovision ~/Library/MobileDevice/Provisioning\ Profiles/$UUID.mobileprovision
         echo "PROFILE_UUID=$UUID" >> $GITHUB_ENV
 
-    # 11. Build iOS IPA
+    # 10. Build IPA with connectivity_plus fix
     - name: Build IPA
       run: |
-        flutter build ios --release
         cd ios
+        
+        # Build with optimizations
         xcodebuild -workspace Runner.xcworkspace \
-                   -scheme Runner \
-                   -configuration Release \
-                   -archivePath ../build/Runner.xcarchive \
-                   clean archive \
-                   CODE_SIGN_STYLE=Manual \
-                   PROVISIONING_PROFILE_SPECIFIER=${{ env.PROFILE_UUID }} \
-                   DEVELOPMENT_TEAM=${{ secrets.TEAM_ID }}
-
+                  -scheme Runner \
+                  -configuration Release \
+                  -archivePath ../build/Runner.xcarchive \
+                  clean archive \
+                  CODE_SIGN_STYLE=Manual \
+                  PROVISIONING_PROFILE_SPECIFIER=${{ env.PROFILE_UUID }} \
+                  DEVELOPMENT_TEAM=${{ secrets.TEAM_ID }} \
+                  GCC_WARN_INHIBIT_ALL_WARNINGS=YES \
+                  SWIFT_SUPPRESS_WARNINGS=YES \
+                  COMPILER_INDEX_STORE_ENABLE=NO \
+                  OTHER_SWIFT_FLAGS="-Xfrontend -warn-long-function-bodies=500 -Xfrontend -warn-long-expression-type-checking=500" \
+                  GCC_PREPROCESSOR_DEFINITIONS='CONNECTIVITY_PLUS_VERSION=500000' \
+                  | tee xcodebuild.log || true
+                  
+        # Check if build succeeded
+        if ! grep -q "ARCHIVE SUCCEEDED" xcodebuild.log; then
+          echo "::error::Build failed. See logs for details"
+          cat xcodebuild.log
+          exit 1
+        fi
+        
+        # Export IPA
         xcodebuild -exportArchive \
-                   -archivePath ../build/Runner.xcarchive \
-                   -exportOptionsPlist ../ExportOptions.plist \
-                   -exportPath ../build \
-                   -allowProvisioningUpdates
+                  -archivePath ../build/Runner.xcarchive \
+                  -exportOptionsPlist ../ExportOptions.plist \
+                  -exportPath ../build \
+                  -allowProvisioningUpdates
 
-    # 12. Upload IPA artifact
+    # 11. Upload IPA
     - name: Upload IPA
       uses: actions/upload-artifact@v4
       with:
