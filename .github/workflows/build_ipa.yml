@@ -50,13 +50,17 @@ jobs:
     - name: Remove Android folder
       run: rm -rf android
 
+    # 7. Build Flutter iOS frameworks for CocoaPods
+    - name: Build Flutter iOS Frameworks
+      run: flutter build ios-framework --no-universal --output=ios/Flutter
+
     # 8. Clean and install CocoaPods
     - name: Clean and install CocoaPods
       run: |
         cd ios
 
         echo "🔄 Installing stable CocoaPods"
-        sudo gem install cocoapods -n /usr/local/bin
+        sudo gem install cocoapods -n /usr/local/bin 
 
         echo "📦 Installing Pods"
         pod install --repo-update --verbose
