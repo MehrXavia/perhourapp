@@ -83,7 +83,7 @@ dependencies:
   custom_map_markers: ^1.0.0
   flutter_timer_countdown: ^1.0.0
   local_auth: ^2.1.8
-  pulsator: ^1.0.1
+  pulsator: ^0.0.3
   font_awesome_flutter: ^10.7.0
   package_info_plus: ^8.0.2
   intl: ^0.18.1
