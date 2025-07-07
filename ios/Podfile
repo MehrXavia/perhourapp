@@ -42,7 +42,7 @@ post_install do |installer|
       config.build_settings['IPHONEOS_DEPLOYMENT_TARGET'] = '16.0'
 
       if target.name == 'FirebaseCoreInternal'
-        config.build_settings['SWIFT_VERSION'] = '5.9'
+        config.build_settings['SWIFT_VERSION'] = '5.0'
         config.build_settings['SWIFT_COMPILATION_MODE'] = 'wholemodule'
       end
 
