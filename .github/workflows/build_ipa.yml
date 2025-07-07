@@ -35,7 +35,7 @@ jobs:
         mv temp_app/android ./android
         rm -rf temp_app
         flutter clean
-        rm -rf ios/Pods ios/Podfile.lock ios/Runner.xcworkspace 
+        rm -rf ios/Pods/ ios/Podfile.lock ios/Runner.xcworkspace 
         rm -rf .dart_tool .packages pubspec.lock
         rm -rf ~/Library/Developer/Xcode/DerivedData
 
