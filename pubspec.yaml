@@ -100,7 +100,7 @@ dependencies:
   map_picker:
   geocoding:
   loading_indicator:
-  connectivity_plus: ^6.0.1
+  connectivity_plus: ^6.0.3
   sms_otp_auto_verify:
     path: lib_plugins/sms_otp_auto_verify
 
