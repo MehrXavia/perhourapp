@@ -53,7 +53,7 @@ jobs:
     # 7. Install CocoaPods
     - name: Install CocoaPods
       run: |
-        
+        flutter build ios-framework --no-universal --output=ios/Flutter
         cd ios
         sudo gem install cocoapods -n /usr/local/bin
         
