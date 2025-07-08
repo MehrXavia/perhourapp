@@ -35,6 +35,7 @@ target 'Runner' do
   end
 end
 
+  pod 'FirebaseMessaging', :modular_headers => true
 post_install do |installer|
   firebase_pods = installer.pods_project.targets
                   .map(&:name)
