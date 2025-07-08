@@ -11,7 +11,6 @@ project 'Runner', {
 def flutter_root
   generated_xcode_build_settings_path = File.expand_path(File.join('..', 'Flutter', 'Generated.xcconfig'), __FILE__)
   unless File.exist?(generated_xcode_build_settings_path)
-    raise "#{generated_xcode_build_settings_path} must exist. If you're running pod install manually, make sure flutter pub get is executed first"
   end
 
   File.foreach(generated_xcode_build_settings_path) do |line|
@@ -47,7 +46,11 @@ post_install do |installer|
     target.build_configurations.each do |config|
       config.build_settings['IPHONEOS_DEPLOYMENT_TARGET'] = '16.0'
       config.build_settings['CODE_SIGNING_ALLOWED'] = 'NO'
-
+      # Firebase header fixes
+              if target.name == 'firebase_messaging'
+                config.build_settings['CLANG_ALLOW_NON_MODULAR_INCLUDES_IN_FRAMEWORK_MODULES'] = 'YES'
+                config.build_settings['DEFINES_MODULE'] = 'YES'
+              end
       if firebase_pods.include?(target.name)
         config.build_settings['CLANG_ALLOW_NON_MODULAR_INCLUDES_IN_FRAMEWORK_MODULES'] = 'YES'
       end
