@@ -95,7 +95,7 @@ dependencies:
   readmore:
   google_map_marker_animation:
   share_plus: 
-  firebase_messaging: ^14.7.0
+  firebase_messaging: 14.7.10
   map_picker:
   geocoding:
   loading_indicator:
