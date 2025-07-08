@@ -1,4 +1,5 @@
 platform :ios, '16.0'
+use_frameworks! :linkage => :static
 use_modular_headers!
 ENV['COCOAPODS_DISABLE_STATS'] = 'true'
 
@@ -11,6 +12,7 @@ project 'Runner', {
 def flutter_root
   generated_xcode_build_settings_path = File.expand_path(File.join('..', 'Flutter', 'Generated.xcconfig'), __FILE__)
   unless File.exist?(generated_xcode_build_settings_path)
+    raise "Generated.xcconfig must exist. Run 'flutter pub get'"
   end
 
   File.foreach(generated_xcode_build_settings_path) do |line|
@@ -25,7 +27,16 @@ require File.expand_path(File.join('packages', 'flutter_tools', 'bin', 'podhelpe
 flutter_ios_podfile_setup
 
 target 'Runner' do
-  pod 'GoogleMaps' # Optional, remove if unused
+  use_frameworks! :linkage => :static
+  
+  # Explicit Firebase pods with modular headers
+  pod 'FirebaseCore', '~> 10.0', :modular_headers => true
+  pod 'FirebaseMessaging', '~> 10.0', :modular_headers => true
+  
+  # Optional Google pods
+  pod 'GoogleMaps' # Remove if unused
+  pod 'GoogleUtilities', :modular_headers => true
+  pod 'GoogleDataTransport', :modular_headers => true
 
   flutter_install_all_ios_pods File.dirname(File.realpath(__FILE__))
 
@@ -34,38 +45,63 @@ target 'Runner' do
   end
 end
 
-  pod 'FirebaseMessaging', :modular_headers => true
-  pod 'FirebaseCore', :modular_headers => true
 post_install do |installer|
-  firebase_pods = installer.pods_project.targets
-                  .map(&:name)
-                  .select { |name| name.downcase.include?('firebase') || name.include?('Google') }
+  # Xcode 16 specific settings
+  installer.pods_project.build_settings.tap do |settings|
+    settings['ENABLE_USER_SCRIPT_SANDBOXING'] = 'NO'
+    settings['ALWAYS_EMBED_SWIFT_STANDARD_LIBRARIES'] = 'YES'
+  end
 
   installer.pods_project.targets.each do |target|
     flutter_additional_ios_build_settings(target)
-
+    
     target.build_configurations.each do |config|
+      # Xcode 16 compatibility
       config.build_settings['IPHONEOS_DEPLOYMENT_TARGET'] = '16.0'
       config.build_settings['CODE_SIGNING_ALLOWED'] = 'NO'
-      # Firebase header fixes
-              if target.name == 'firebase_messaging'
-                config.build_settings['CLANG_ALLOW_NON_MODULAR_INCLUDES_IN_FRAMEWORK_MODULES'] = 'YES'
-                config.build_settings['DEFINES_MODULE'] = 'YES'
-              end
-              if target.name == 'firebase_core'
-                config.build_settings['CLANG_ALLOW_NON_MODULAR_INCLUDES_IN_FRAMEWORK_MODULES'] = 'YES'
-                config.build_settings['DEFINES_MODULE'] = 'YES'
-              end
-      if firebase_pods.include?(target.name)
-        config.build_settings['CLANG_ALLOW_NON_MODULAR_INCLUDES_IN_FRAMEWORK_MODULES'] = 'YES'
+      config.build_settings['BUILD_LIBRARY_FOR_DISTRIBUTION'] = 'YES'
+      
+      # Required for Firebase headers
+      config.build_settings['CLANG_ALLOW_NON_MODULAR_INCLUDES_IN_FRAMEWORK_MODULES'] = 'YES'
+      
+      # Xcode 16 new build system enhancements
+      config.build_settings['SWIFT_EMIT_LOC_STRINGS'] = 'YES'
+      config.build_settings['LD_RUNPATH_SEARCH_PATHS'] = ['$(inherited)', '@executable_path/Frameworks']
+      
+      # Google Maps and Firebase specific settings
+      if target.name.include?('Google') || target.name.include?('Firebase')
+        config.build_settings['GCC_PREPROCESSOR_DEFINITIONS'] ||= ['$(inherited)']
+        config.build_settings['GCC_PREPROCESSOR_DEFINITIONS'] << 'FIRFirebase_VERSION=10.0.0'
       end
+      
+      # Xcode 16 linker fixes
+      if target.name == 'Flutter'
+        config.build_settings['OTHER_LDFLAGS'] = ['$(inherited)', '-ld64', '-lz']
+      end
+    end
+  end
 
-      xcconfig_path = config.base_configuration_reference.real_path
-      if File.exist?(xcconfig_path)
+  # Xcode 16 architecture handling for Apple Silicon
+  installer.pods_project.build_configurations.each do |config|
+    config.build_settings['EXCLUDED_ARCHS[sdk=iphonesimulator*]'] = 'arm64'
+    config.build_settings['ONLY_ACTIVE_ARCH'] = 'YES'
+  end
+
+  # Workaround for DT_TOOLCHAIN_DIR issue
+  installer.pods_project.targets.each do |target|
+    target.build_configurations.each do |config|
+      if config.base_configuration_reference&.real_path&.exist?
+        xcconfig_path = config.base_configuration_reference.real_path
         xcconfig = File.read(xcconfig_path)
         xcconfig_mod = xcconfig.gsub(/DT_TOOLCHAIN_DIR/, "TOOLCHAIN_DIR")
         File.open(xcconfig_path, "w") { |file| file.write(xcconfig_mod) }
       end
     end
+  end
+  
+  # Xcode 16 cloud signing compatibility
+  installer.pods_project.root_object.attributes['TargetAttributes']&.each do |_, attr|
+    attr['ProvisioningStyle'] = 'Automatic'
+    attr['DevelopmentTeam'] = ''
   end
 end
