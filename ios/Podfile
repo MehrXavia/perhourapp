@@ -37,14 +37,9 @@ target 'Runner' do
 end
 
 post_install do |installer|
-  firebase_pods = [
-    'FirebaseCore',
-    'FirebaseMessaging',
-    'FirebaseInstallations',
-    'GoogleUtilities',
-    'FirebaseCoreInternal',
-    'GoogleDataTransport'
-  ]
+  firebase_pods = installer.pods_project.targets
+                  .map(&:name)
+                  .select { |name| name.downcase.include?('firebase') || name.include?('Google') }
 
   installer.pods_project.targets.each do |target|
     flutter_additional_ios_build_settings(target)
